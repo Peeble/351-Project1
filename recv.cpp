@@ -28,7 +28,7 @@ const char recvFileName[] = "recvfile";
 
 void init(int& shmid, int& msqid, void*& sharedMemPtr)
 {
-			printf("test");
+	printf("inside init\n");
 
 
 	/* TODO: 1. Create a file called keyfile.txt containing string "Hello world" (you may do
@@ -42,24 +42,28 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 		    may have the same key.
 	 */
 	// DONE
-	printf("setup key\n");
 	key_t key = ftok("keyfile.txt", 'a');
+	printf("setup key\n");
+
 
 
 	/* TODO: Allocate a piece of shared memory. The size of the segment must be SHARED_MEMORY_CHUNK_SIZE. */
 	// DONE
 	shmid = shmget(key,SHARED_MEMORY_CHUNK_SIZE,0666|IPC_CREAT); 
+	printf("allocated memory\n");
 
 
 
 	/* TODO: Attach to the shared memory */
 	// DONE
     sharedMemPtr = shmat(shmid,(void*)0,0); 
+	printf("attatch to shared memory\n");
 
 	/* TODO: Create a message queue */
 	// DONE
 
 	msqid = msgget(key, 0666 | IPC_CREAT); 
+	printf("created message queue\n");
 
 	/* Store the IDs and the pointer to the shared memory region in the corresponding parameters */
 
@@ -73,6 +77,7 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
  */
 void mainLoop()
 {
+	printf("inside main loop\n");
 	/* The size of the mesage */
 	int msgSize = 0;
 	
@@ -110,19 +115,25 @@ void mainLoop()
 	/* A buffer to store message received from the receiver. */
 	message rcvMsg;
 
+
 	msgSize = 1;
-	printf("test");
 	while(msgSize != 0)
 	{	
-		printf("test");
+		printf("Inside while loop\n");
 
 
 		msgrcv(msqid, &rcvMsg, sizeof(rcvMsg), SENDER_DATA_TYPE, 0);
+		printf("Receiving message queue\n");
+
+		printf("Message size: %d \n",rcvMsg.size);
+
+		msgSize = rcvMsg.size;
 
 
 		/* If the sender is not telling us that we are done, then get to work */
 		if(msgSize != 0)
 		{
+			printf("Inside if statement\n");
 			/* Save the shared memory to file */
 			if(fwrite(sharedMemPtr, sizeof(char), msgSize, fp) < 0)
 			{
@@ -138,7 +149,7 @@ void mainLoop()
 			 sndMsg.size = 0;
 
 			 msgsnd(msqid, &sndMsg, 0, 0);
-			 printf("Sending message");
+			 printf("Sending message\n");
 		}
 		/* We are done */
 		else
@@ -183,7 +194,7 @@ void ctrlCSignal(int signal)
 int main(int argc, char** argv)
 {
 	
-	printf("testey \n");
+	//printf("testey \n");
 	/* TODO: Install a singnal handler (see signaldemo.cpp sample file).
  	 * In a case user presses Ctrl-c your program should delete message
  	 * queues and shared memory before exiting. You may add the cleaning functionality
