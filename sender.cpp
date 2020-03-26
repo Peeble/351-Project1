@@ -36,16 +36,41 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 	 */
 
 		key_t key = ftok("keyfile.txt", 'a');
+		printf("Key setup\n");
 	
 	/* TODO: Get the id of the shared memory segment. The size of the segment must be SHARED_MEMORY_CHUNK_SIZE */
-		// Not sure if correct
-		shmid = shmget(key,SHARED_MEMORY_CHUNK_SIZE,0666|IPC_CREAT); 
+		if((shmid = shmget(key,SHARED_MEMORY_CHUNK_SIZE,0666|IPC_CREAT)) < 0)
+		{
+			perror("Couldn't get ID of shared memory segment.\n");
+			exit(-1);
+		} 
+		else 
+		{
+			printf("Got ID of shared memory segment.\n");
+		}
 
 	/* TODO: Attach to the shared memory */
-	  sharedMemPtr = shmat(shmid,(void*)0,0); 
+	  if((sharedMemPtr = shmat(shmid,(void*)0,0)) < 0)
+		{
+			perror("Couldn't attach to shared memory segment.\n");
+			exit(-1);
+		}
+		else
+		{
+			printf("Attached to shared memory segment.\n");
+		}
+		
 
 	/* TODO: Attach to the message queue */
-		msqid = msgget(key, 0666 | IPC_CREAT); 
+		if((msqid = msgget(key, 0666 | IPC_CREAT)) < 0)
+		{
+			perror("Coudln't attatch to message queue.\n");
+			exit(-1);
+		}
+		else
+		{
+			printf("Attatched to message queue.\n");
+		}
 
 	/* Store the IDs and the pointer to the shared memory region in the corresponding parameters */
 	
@@ -61,6 +86,14 @@ void init(int& shmid, int& msqid, void*& sharedMemPtr)
 void cleanUp(const int& shmid, const int& msqid, void* sharedMemPtr)
 {
 	/* TODO: Detach from shared memory */
+	if(shmdt(sharedMemPtr) < 0)
+	{
+		perror("Couldn't detatch from memory.\n");
+	}
+	else 
+	{
+		printf("Detatched from shared memory.\n");
+	}
 }
 
 /**
@@ -106,9 +139,17 @@ void send(const char* fileName)
 		 
 		 sndMsg.mtype = SENDER_DATA_TYPE;
 
-		 msgsnd(msqid, &sndMsg, sizeof(sndMsg), 0);
-
-		 printf("testey %d", sndMsg.size);
+		 if(msgsnd(msqid, &sndMsg, sizeof(sndMsg), 0) < 0)
+		 {
+			 perror("Message not sent\n");
+			 exit(-1);
+		 }
+		 else
+		 {
+			 printf("Message sent\n");
+			 printf("Message size: %d\n", sndMsg.size);
+		 }
+		 
 
 		 
 		
@@ -116,7 +157,16 @@ void send(const char* fileName)
  		 * that he finished saving the memory chunk. 
  		 */
 
-		 msgrcv(msqid, &rcvMsg, 0, RECV_DONE_TYPE, 0);
+		 if(msgrcv(msqid, &rcvMsg, 0, RECV_DONE_TYPE, 0) < 0)
+		 {
+			 perror("Not able to receive message\n");
+			 exit(-1);
+		 }
+		 else
+		 {
+			 printf("Received message\n");
+		 }
+		 
 	}
 	
 
@@ -127,12 +177,20 @@ void send(const char* fileName)
 
 	 sndMsg.mtype = SENDER_DATA_TYPE;
 	 sndMsg.size = 0;
-	 msgsnd(msqid, &sndMsg, sizeof(sndMsg), 0);
+	 if(msgsnd(msqid, &sndMsg, sizeof(sndMsg), 0) < 0)
+	 {
+		 perror("Not able to send message\n");
+		 exit(-1);
+	 }
+	 else
+	 {
+		 printf("Nothing left to send\n");
+	 }
 
 		
 	/* Close the file */
 	fclose(fp);
-	printf("Filed closed");
+	printf("Filed closed\n");
 	
 }
 
